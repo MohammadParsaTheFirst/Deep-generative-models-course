@@ -165,7 +165,32 @@ At last, the total number of required parameter is $3C \times (D+1)$.
     \begin{equation*}
         \text{Var(f(x))} \approx \frac{1}{M} \sum_{m=1}^M f(x_m)^2 - (\frac{1}{M}   \sum_{m=1}^M f(x_m))^2 
     \end{equation*}
-    \item 
+    \item In order to achieve an unbiased estimator for $F(\theta)$, instead of using $N$ terms in the Monte-Carlo simulation, we can average on $K$ terms and Let also $\forall i \in {1,2,...,K} : m_i \sim Unif([1,2,..,N])$. \\
+    So we have $F(\theta) = \sum_{n=1}^N w_n f(\theta; n) + \lambda R(\theta)$. As mentioned earlier, instead of using $N$ terms in the sum, we will use k terms and then scale the result by a factor of $\frac{N}{K}$ like:
+    \begin{equation*}
+        \hat{F}(\theta) = \frac{N}{K} \sum_{m_i \sim  Unif([1,2,..,N])}  w_{m_i} 
+        f(\theta; m_i) + \lambda R(\theta)
+    \end{equation*}
+    Firstly, we can prove that this estimator is unbiased or in other words: 
+    \begin{equation*}
+    \mathbb{E}_{m_1 ,.., m_K} [\hat{F}(\theta)] = F(\theta)
+    \end{equation*}
+    which is trivial and can be obtained from:
+    \begin{equation*}
+        \mathbb{E}[ \hat{F}(\theta) ] = \mathbb{E} [\frac{N}{K} \sum_{m_i }  w_{m_i} f(\theta, m_i) + \lambda R(\theta) ] = \frac{N}{K} \mathbb{E} [ \sum_{m_i }  w_{m_i} f(\theta; m_i)] + \lambda R(\theta)
+    \end{equation*}
+    Now, we will assume that for each $w_k$, if they were selected,$y_k = w_k$, and otherwise they are zero. So we get that:
+    \begin{equation*}
+        \mathbb{E}[ \hat{F}(\theta) ] = \mathbb{E} [\frac{N}{K} \sum_{i=1}^N  y_{i} f(\theta, m_i) + \lambda R(\theta) ]
+    \end{equation*} where $y_i $ is a random variable with binomial distribution. It is obvious that $\mathbb{P} [y_n \neq 0] = \frac{K}{N}$ and $\mathbb{P} [y_n =0] = \frac{N-K}{N}$. Therefore, it is easy to see that $\mathbb{E} [y_i]  = \frac{K}{N} w_i $ .
+    \\
+    So by linearity of expectation and the fact from above we will get that:
+    \begin{equation*}
+    \mathbb{E}[ \hat{F}(\theta) ] = \frac{N}{K} \sum_{i=1}^N \frac{K}{N} w_{i} f(\theta, i) + \lambda R(\theta) = F(\theta) 
+    \end{equation*}
+    We can do the same with gradient calculations. Now, assuming that the function call and the gradient are $o(1)$, if we sum up all $N$ terms we will get a complexity of $o(N)$ in calculating $F(\theta)$ and $ \nabla F(\theta)$.
+    However, in the proposed method, the complexity of the calculation of $F(\theta)$ and $ \nabla F(\theta)$, will shrink to $o(K)$. \\
+    However, we should note that $K$, can't be small, since we are replacing the expectation with the average.
 \end{enumerate}
 
 
