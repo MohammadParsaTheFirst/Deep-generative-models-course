@@ -1,5 +1,5 @@
 # Deep-Generative-Models
-Coursework and projects for Deep Generative Models (DGM) course (Graduate), including theoretical homework solutions/problems, final solution/problems, and the project of the course.
+Coursework and projects for Deep Generative Models (DGM) course (Graduate), including theoretical homework solutions/problems, and the project of the course.
 
 ## CHW1's Results:
 - **Implementing an LSTM to fit the `yfinance` data**:
