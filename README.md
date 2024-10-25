@@ -12,12 +12,8 @@ Coursework and projects for Deep Generative Models (DGM) course (Graduate), incl
 - **Implementing the PixelCNN's structure for Generation of `MNIST` dataset Numbers**:
   We implemented the PixelCNN model to generate images from the MNIST dataset. PixelCNN is an autoregressive model that predicts each pixel in the image sequentially, conditioned on previously generated pixels. This structure allows it to capture intricate spatial dependencies in the data. The process involved defining the model architecture, training it on the MNIST dataset, and evaluating the quality of the generated images.
 
-  <div align="center">
-    <img src="https://github.com/MohammadParsaTheFirst/Deep-generative-models-course/blob/main/CHW1/results/Pixelcnn_Result1.png?raw=true" alt="PixelCNN Results" width="500"/>
-  </div>
-
-
-    <div style="display: flex; justify-content: center;">
-    <img src="https://github.com/MohammadParsaTheFirst/Deep-generative-models-course/blob/main/CHW1/results/Pixelcnn_Result1.png?raw=true" alt="PixelCNN Results" width="45%" style="margin-right: 10px;"/>
-    <img src="https://github.com/MohammadParsaTheFirst/Deep-generative-models-course/blob/main/CHW1/results/Pixelcnn_Result2.png?raw=true" alt="PixelCNN Results" width="45%"/>
+  <div style="display: flex; justify-content: center;">
+    <img src="https://github.com/MohammadParsaTheFirst/Deep-generative-models-course/blob/main/CHW1/results/Pixelcnn_Result1.png?raw=true" alt="LSTM Results" width="30%" style="margin-right: 10px;"/>
+    <img src="https://github.com/MohammadParsaTheFirst/Deep-generative-models-course/blob/main/CHW1/results/Pixelcnn_Result2.png?raw=true" alt="PixelCNN Results" width="30%" style="margin-right: 10px;"/>
+    <img src="https://github.com/MohammadParsaTheFirst/Deep-generative-models-course/blob/main/CHW1/results/Pixelcnn_Result3.png?raw=true" alt="Additional Results" width="30%"/>
   </div>
