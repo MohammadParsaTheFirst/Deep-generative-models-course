@@ -15,3 +15,9 @@ Coursework and projects for Deep Generative Models (DGM) course (Graduate), incl
   <div align="center">
     <img src="https://github.com/MohammadParsaTheFirst/Deep-generative-models-course/blob/main/CHW1/results/Pixelcnn_Result1.png?raw=true" alt="PixelCNN Results" width="500"/>
   </div>
+
+
+    <div style="display: flex; justify-content: center;">
+    <img src="https://github.com/MohammadParsaTheFirst/Deep-generative-models-course/blob/main/CHW1/results/Pixelcnn_Result1.png?raw=true" alt="PixelCNN Results" width="45%" style="margin-right: 10px;"/>
+    <img src="https://github.com/MohammadParsaTheFirst/Deep-generative-models-course/blob/main/CHW1/results/Pixelcnn_Result2.png?raw=true" alt="PixelCNN Results" width="45%"/>
+  </div>
