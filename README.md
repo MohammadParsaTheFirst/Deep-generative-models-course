@@ -1,6 +1,10 @@
 # Deep-Generative-Models
 Coursework and projects for Deep Generative Models (DGM) course (Graduate), including theoretical homework solutions/problems, and the project of the course.
 
+Here is the page of the course:
+https://generative-ai-sut.github.io/
+
+
 ## CHW1's Results:
 - **Implementing an LSTM to fit the `yfinance` data**:
   We developed a Long Short-Term Memory (LSTM) network to analyze and predict stock prices using the `yfinance` dataset. The LSTM model captures temporal dependencies and patterns in stock price data, allowing for more accurate predictions compared to traditional linear models. Key steps included data preprocessing, model architecture design, training, and evaluation.
