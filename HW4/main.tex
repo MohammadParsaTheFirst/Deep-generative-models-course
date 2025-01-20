@@ -1,0 +1,333 @@
+\documentclass{article}
+\usepackage{graphicx,fancyhdr,amsmath,amssymb,amsthm,subfig,url,hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+%----------------------- Macros and Definitions --------------------------
+%%% FILL THIS OUT
+\newcommand{\SecondAuther}{Mohammad Parsa Dini}
+\newcommand{\exerciseset}{Homework Set 4 (Sol)}
+%%% END
+\renewcommand{\theenumi}{\bf \Alph{enumi}}
+\fancypagestyle{plain}{}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[RO,LE]{\sffamily\bfseries\large Sharif University of Technology}
+\fancyhead[LO,RE]{\sffamily\bfseries\large EE 25-120: Deep Generative Models}
+\fancyfoot[LO,RE]{\sffamily\bfseries\large Problem Set 4}
+\fancyfoot[RO,LE]{\sffamily\bfseries\thepage}
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{1pt}
+\graphicspath{{figures/}}
+%-------------------------------- Title ----------------------------------
+\title{Deep Generative Models \par \exerciseset}
+\author{\SecondAuther , std-id: 400101204}
+%--------------------------------- Text ----------------------------------
+\begin{document}
+\maketitle
+% -----------------------------------------------------------------------------
+\section{Problem 1}
+\subsection{Recall of Contrastive Divergence (CD)}
+Well, the $CD$ is used in many MCMC sampling algorithms and its aim is to find the divergence between the data distribution $p_{data}(.)$ and the model's distribution $p_\theta(.)$. In the case of neural networks and RBMs, $CD$ aims to minimize the energy of the network. So we map this energy to the probability distribution of the model and data from a physical point of view. There is an energy function $E(.;\theta)$ to model the data distribution $p_\theta (.) = \frac{e^{- E(.;\theta)}}{Z_\theta}$. Due to the volume preservability of probability, they must sum to one and we get the partition function $Z_\theta = \sum_{v,h} \exp(-E(v,h; \theta))$, which is intractable since it must be summed over all states and values of the model. Specifically, the energy function \( E(v,h; \theta) \) in an RBM is given by:
+\begin{equation*}
+E(v,h; \theta) = - \sum_{i} b_i v_i - \sum_{j} c_j h_j - \sum_{i,j} W_{ij} v_i h_j = - b^T v - c^T h - v^T W h
+\end{equation*}
+The probability distribution over the visible and hidden units in the RBM is:
+\begin{equation*}
+p(v,h; \theta) = \frac{1}{Z(\theta)} \exp(-E(v,h; \theta))
+\end{equation*}
+where $Z(\theta) = \sum_{v,h} \exp(-E(v,h; \theta))$ (or the other version: $Z(\theta) = \int_{\chi} \exp(-E(x; \theta)) dx$) is the partition function, \( v \) represents the visible units, \( h \) represents the hidden units, \( b_i \) and \( c_j \) are the biases for the visible and hidden layers, respectively, and \( W_{ij} \) are the weights between the visible and hidden units.
+
+Now it's obvious that if we want to maximize the log-likelihood, we must minimize the energy function. Since optimizing the log-likelihood directly is intractable due to the partition function \( Z(\theta) \), we use CD instead, which approximates the gradient of the log-likelihood (which is the energy function) by performing a few steps of Gibbs sampling.
+
+Here is the \textbf{Contrastive Divergence} Algorithm:
+\begin{itemize}
+\item **Positive Phase**: Sample the hidden units \( h(1) \) from the visible units \( v \) in the data distribution.
+\item **Negative Phase**: Perform a few Gibbs sampling steps to reconstruct the visible units \( v(2) \) from the hidden units \( h(1) \), and then sample the hidden units \( h(2) \) from \( v(2) \).
+\item **Update**: Update the parameters based on the difference between the outer products of the data and the reconstructed hidden and visible units:
+\begin{equation*}
+\Delta W = \eta (\langle v h \rangle_{\text{data}} - \langle v h \rangle_{\text{model}})
+\end{equation*}
+where \( \eta \) is the learning rate.
+\end{itemize}
+
+% ------------------------
+\subsection{Introducing Noise Contrastive Estimation (NCE)}
+\begin{enumerate}
+    \item
+Using CD to estimate the model's parameters without access to the full partition function \( Z_\theta \) involves adding energy from extraneous points and incorporating them into the local observed data points. However, without preserving the energy, this approach merely adds energy without altering the energy of other points. Conversely, if we had access to the partition function, the preservation of energy would necessitate that an increase in the probability (or equivalently, a decrease in the energy) of certain data points \( E_\theta(x_\theta) \) would require a corresponding decrease in the probability (or equivalently, an increase in the energy) of other points \( E_\theta(x_d) \).
+\\
+The image below is accenting the reason:
+\begin{figure}[h!]
+        \centering
+        \includegraphics[scale=0.3]{Screenshot 2025-01-19 160201.png} % Resizing the image to half its size
+        %\caption{The spectrum of the random graph signal $x_H$ over $\{\lambda_1, ...,\lambda_n\}$}
+        \label{fig:gr1}
+    \end{figure} 
+% ----------------------------------------------
+\item 
+
+Noise Contrastive Estimation (NCE) is a technique designed to address the difficulty of calculating the partition function \( Z_\theta \) when estimating the parameters of probabilistic models. Instead of directly computing the partition function, which is computationally expensive due to the sum over all possible configurations of the model's variables, NCE proposes a more efficient approach by framing the parameter estimation as a binary classification problem.
+
+The key idea behind NCE is to use noise distributions as a way to contrast the model's data distribution with a simpler distribution that is easier to handle, typically referred to as the "noise distribution." Rather than calculating the exact partition function, NCE aims to learn the parameters of the model by distinguishing between real data samples and samples generated from the noise distribution. The data distribution, \( p_{\text{data}}(v) \), is the true distribution we want to model, while the noise distribution, \( q(v) \), is typically a simpler distribution, such as a uniform or Gaussian distribution, which is easy to sample from.
+
+For each data sample \( v \), NCE treats it as a binary classification problem: 
+\textbf{is the sample drawn from the data distribution \( p_{\text{data}}(v) \) or from the noise distribution \( q(v) \)?}
+The model then learns to classify each sample as either "real" (from the data distribution) or "fake" (from the noise distribution). This transforms the problem of parameter estimation into a logistic regression task, where the goal is to predict whether a given sample came from the true data distribution or from the noise distribution. For each sample \( v \), a logistic regression model is trained to predict the probability of \( v \) being from the data distribution as opposed to the noise distribution. The output of this logistic model is given by:
+
+\[
+p_{\text{data}}(v) = \frac{1}{1 + \exp(-f(v))}
+\]
+
+where \( f(v) \) is some function of the data, typically parameterized by the model we are trying to learn. This function \( f(v) \) is trained using standard binary cross-entropy loss.
+
+The objective in NCE is to maximize the likelihood of distinguishing between data samples and noise samples. The objective function is derived from the logistic regression task, and it does not require knowledge of the partition function \( Z_\theta \). The gradient of this objective function with respect to the parameters of the model allows us to update the model without needing to compute \( Z_\theta \), as the noise distribution is used as a reference for learning.
+
+%By avoiding the need for the partition function, NCE provides a more efficient way to estimate model parameters. The key is that the partition function is effectively ignored during training, as the model learns to distinguish data samples from noise, rather than directly modeling the entire probability distribution.
+
+%In summary, NCE transforms the parameter estimation problem into a binary classification task, where the model learns to distinguish between data samples and noise samples. This approach avoids the need to compute the partition function, which would otherwise be intractable. Instead of modeling the entire probability distribution, NCE focuses on learning to differentiate the data distribution from a simpler noise distribution, making it computationally efficient and scalable for large datasets and complex models.
+
+\end{enumerate}
+%- --------------------------------------------------------
+\subsection{Formulating NCE}
+\begin{enumerate}
+\item
+
+As we said earlier, in Noise Contrastive Estimation (NCE) the objective is to distinguish between samples drawn from the true data distribution \( p_{\text{data}}(x) \) and samples drawn from a noise distribution \( q(x) \). The role of the noise distribution in NCE is fundamental to the method, as it provides a contrasting distribution against which the true data distribution is learned. By using the noise distribution, NCE simplifies the problem of estimating the model’s parameters by framing it as a binary classification task. This allows the model to estimate the parameters without requiring the explicit computation of the partition function, which would otherwise be intractable.
+
+Choosing a suitable noise distribution is crucial because it impacts the effectiveness of the learning process. The noise distribution should ideally be chosen to be simple enough to sample from easily, yet it should still provide a meaningful contrast to the true data distribution. If the noise distribution is too similar to the data distribution, the model will find it difficult to distinguish between the two, leading to poor learning. On the other hand, if the noise distribution is too different from the data distribution, the binary classification task may become too easy, resulting in suboptimal learning that does not properly reflect the true data distribution.
+% ---------------------------------------------------------------------
+\item
+Given a set of data samples \( x_1, x_2, \dots, x_n \) and a noise distribution \( q(x) \), the objective function for Noise Contrastive Estimation (NCE) aims to maximize the likelihood of correctly distinguishing between data and noise samples. For each sample \( x_i \), the model learns to classify it as coming from the data distribution \( p_{\text{data}}(x) \) or the noise distribution \( q(x) \).
+
+The objective function is the log-likelihood of correctly identifying data and noise samples. The probability of \( x_i \) being from the data distribution is modeled using a logistic function:
+
+\[
+p_{\text{data}}(x_i) = \frac{1}{1 + \exp(-f(x_i))}
+\]
+
+The objective function is the sum of the log-likelihoods for all data samples:
+
+\[
+\mathcal{L} = \sum_{i=1}^{n} \log \left( \frac{p_{\text{data}}(x_i)}{p_{\text{data}}(x_i) + q(x_i)} \right)
+\]
+
+Maximizing this objective allows the model to learn the parameters without needing to compute the partition function.
+
+\end{enumerate}
+\subsection{NCE v.s. CD}
+\begin{enumerate}
+\item 
+Contrastive Divergence (CD) and Noise Contrastive Estimation (NCE) are methods used to train probabilistic models, but they differ in goals, learning objectives, and computational requirements.
+
+CD approximates the gradient of the log-likelihood for models like RBMs by minimizing the difference between the model's data distribution and the data after a short MCMC sampling process using a single Gibbs sampling step, making it computationally less expensive but introducing bias.
+
+NCE estimates model parameters without the partition function by maximizing the likelihood of distinguishing between true data and noise samples, framing it as a binary classification task, which simplifies estimation and makes it scalable for large datasets.
+% --------------------------------------------------------------
+\item 
+Noise Contrastive Estimation (NCE) might be preferred over Contrastive Divergence (CD) when the partition function is computationally expensive or intractable, such as in models with large state spaces. NCE eliminates the need for calculating the partition function by reformulating the problem as a binary classification task, which is computationally more efficient, especially for large datasets.
+
+One of the main advantages of NCE over CD is its scalability. Since NCE only requires distinguishing between data and noise samples, it avoids the need for iterative MCMC sampling, which can be slow and prone to introducing bias, especially in models with complex dependencies. This makes NCE more efficient for models that are difficult to sample from directly, such as deep generative models or models with large latent spaces.
+
+Moreover, NCE can be more robust in settings where the data distribution is difficult to model directly, as it relies on learning to differentiate between the data and a simpler noise distribution, which can lead to more stable learning. In contrast, CD’s reliance on a limited number of MCMC steps can sometimes result in biased parameter estimates, especially when the model's distribution is far from the data distribution.
+\end{enumerate}
+% -------------------------------------------------------
+\subsection{Practical Use of NCE}
+A practical application where Noise Contrastive Estimation (NCE) might be used is in training large-scale language models, where the goal is to estimate the probability distribution over words in a given vocabulary. In natural language processing tasks, such as language modeling or word prediction, the partition function is computationally expensive to calculate because it involves summing over all possible words in the vocabulary. This becomes particularly difficult when dealing with large vocabularies, as the number of possible words can be extremely large.
+
+NCE is useful in this scenario because it allows for efficient parameter estimation by avoiding the need to compute the partition function. Instead of directly modeling the entire probability distribution over words, NCE frames the problem as a binary classification task, where the model learns to distinguish between real words from the vocabulary and noise words sampled from a simpler noise distribution. By training the model to differentiate real words from noise, NCE effectively approximates the true distribution over words without requiring the costly computation of the partition function. This makes NCE scalable and computationally efficient, especially for large-scale language models with massive vocabularies.
+% ----------------------------------------------
+\section{Problem 2}
+\subsection{Theoretical Foundations of Score Functions}
+\begin{enumerate}
+\item
+The score function is the gradient of the log-likelihood function with respect to the model parameters. It provides information about the direction in which the likelihood increases most rapidly and is used to update the model parameters during optimization. The score function is related to the likelihood function because it represents the rate of change of the likelihood with respect to the parameters, and its value can guide the search for optimal parameter values.
+
+Mathematically, the score function \( s_\theta(x) \) is given by the derivative of the log-likelihood function \( \log p_\theta(x) \) with respect to the parameters \( \theta \):
+
+\[
+s_\theta(x) = \nabla_\theta \log p(x; \theta)= -\nabla_\theta Z_\theta - \nabla_\theta E_\theta(x) 
+\]
+
+where \( p(x; \theta) = \frac{e^{-E_\theta(x)}}{Z_\theta} \) is the likelihood function, and \( x \) represents the data. 
+% --------------------------------------------------
+\item 
+In Maximum Likelihood Estimation (MLE), the score function is the gradient of the log-likelihood function and indicates the direction of the greatest increase in likelihood with respect to the parameters 
+$\theta$.
+The score function is used to find the parameter values that maximize the likelihood of the observed data $x$.
+
+At the maximum likelihood estimate, the score function equals zero, indicating a local maximum. To find the optimal parameters, we set the score function to zero and solve for $\theta$.
+This is typically done using numerical optimization methods, which iteratively adjust the parameters until convergence.
+
+Thus, the score function efficiently links the parameters to the likelihood, enabling optimization algorithms to find the maximum likelihood estimate.
+\end{enumerate}
+%------------------------------------------------------------------
+\subsection{Score Function for Specific Distributions}
+\begin{enumerate}
+\item 
+The score function will be calculated as($\theta = (\mu,\sigma))$:
+\begin{equation*}
+    s_\theta (x) = \nabla_\theta \log p(x; \theta) = [\nabla_\mu \log p(x; \theta), \nabla_\sigma \log p(x; \theta)]^T = [s_\mu(x), s_\sigma(x)]^T
+    %\frac{1}{\sqrt{2\pi \sigma^2}} 
+\end{equation*}
+\\
+we can compute the score function for both the mean \( \mu \) and the variance \( \sigma^2 \).
+
+
+### Score function for \( \mu \):
+\[
+s_{\mu}(x) = \frac{\partial}{\partial \mu} \ell(x ; \mu, \sigma) = \frac{\partial}{\partial \mu} \sum_{i=1}^{n} \log f(x_i; \mu, \sigma^2) = \frac{\partial}{\partial \mu} \left( -\frac{n}{2} \log(2\pi \sigma^2) - \frac{1}{2\sigma^2} \sum_{i=1}^{n} (x_i - \mu)^2 \right)
+\]
+
+\[
+= \frac{1}{\sigma^2} \sum_{i=1}^{n} (x_i - \mu)
+\]
+### Score function for \( \sigma^2 \):
+\[
+s_{\sigma}(x) = \frac{\partial}{\partial \sigma} \ell(x ; \mu, \sigma^2) = \frac{\partial}{\partial \sigma} \left( -\frac{n}{2} \log(2\pi \sigma^2) - \frac{1}{2\sigma} \sum_{i=1}^{n} (x_i - \mu)^2 \right)
+\]
+\[
+= -\frac{n}{2\sigma^2} + \frac{1}{2\sigma^3} \sum_{i=1}^{n} (x_i - \mu)^2
+\]
+% -----------------------------------------------------------
+\item 
+The score function will be calculated as($\theta = \lambda$):
+\begin{equation*}
+    \forall x\geq 0: s_\lambda (x) = \nabla_\lambda \log p(x; \lambda) = \nabla_\lambda \log(\lambda e^{-\lambda x}) =
+    \nabla_\lambda (\log(\lambda ) - \lambda x) = \frac{1}{\lambda} - x
+\end{equation*}
+% ------------------------------------------------------------
+\end{enumerate}
+% ----------------------------------------
+\subsection{Properties of Score Functions}
+\begin{enumerate}
+\item 
+We obtain that (let $\chi = \text{supp}( p_\theta(.))$):
+\begin{equation*}
+    \mathbb{E}_{x \sim p_\theta(x)} [s_\theta(x)] = \mathbb{E}_{x \sim p_\theta(x)} [ \nabla_\theta \log p_\theta(x)] = 
+    \int_\chi p_\theta(x) \nabla_\theta \log p_\theta(x) \, dx = 
+\end{equation*}
+\begin{equation*}
+    \int_\chi p_\theta(x) \frac{\nabla_\theta \{p_\theta(x)\}} {p_\theta(x)} \, dx = \int_\chi \nabla_\theta \{p_\theta(x)\} \, dx = 
+    \nabla_\theta{\int_\chi p_\theta(x) \, dx} = \nabla_\theta \{1\} = \vec{0}
+\end{equation*}
+% --------------------------------------------------
+\item Let us define the Fischer-Information as: $I(\theta) = \mathbb{E} [ \| \mathbf{s_\theta(x)} \|^2 ] = \text{Var}_{p_\theta(.)}[s_\theta(x)] \geq 0$ since $ \mathbb{E}_{x \sim p_\theta(x)} [s_\theta(x)]=\vec{0}$ and also $\mathbb{E}_{x \sim p_\theta(x)} [s_\theta(x)^T s_\theta(x)] \geq 0$, which proves:
+\begin{equation*}
+    \forall \theta \in \Theta: I(\theta) \geq 0
+\end{equation*}
+\end{enumerate}
+% --------------------------------------------------------
+\subsection{Application of Score Functions in Statistical Inference}
+
+
+% -------------------------------------------------------
+% #######################################################
+% -------------------------------------------------------
+\section{Problem 3}
+\subsection{Theoretical Proof of Equivalence between ISM and ESM}
+\begin{enumerate}
+\item 
+Given a generative model with a parameterized density \( p_\theta(x) \), where \( \theta \) represents the model parameters, the loss functions are defined as follows:
+
+The explicit score matching objective involves the gradient of the log-likelihood of the model's distribution with respect to the data. The loss for explicit score matching is given by:
+
+\[
+L_{\text{explicit}}(\theta) = \mathbb{E}_{p_{\text{data}}(x)} \left[ \left\| \nabla_x \log p_\theta(x) - \nabla_x \log p_{\text{data}}(x) \right\|^2 \right]
+\]
+
+On the other hand, the implicit score matching objective involves the gradient of the model's score function. The loss for implicit score matching is:
+
+\[
+L_{\text{implicit}}(\theta) = \mathbb{E}_{p_{\text{data}}(x)} \left[ \left\| \nabla_x \log p_\theta(x) \right\|^2 \right]
+\]
+% -------------------------------------------------
+\item 
+
+% -----------------------------------------------
+\end{enumerate}
+% --------------------------------------------------------
+\subsection{}
+\begin{enumerate}
+\item 
+Let $p_\theta(x) = \mathcal{N}(x; \mu, \sigma) \xrightarrow{} \log p_\theta(x) = -\frac{1}{2}\log(2\pi \sigma^2) -\frac{(x-\mu)^2}{2\sigma^2}$. Then rewriting implicit and explicit score matching implies that:
+\begin{equation*}
+\mathcal{L}_{\text{explicit}}(\theta) = \mathbb{E}_{x \sim p_{\text{data}}(x)} \left[ \left\| \nabla_x \log p_\theta(x) - \nabla_x \log p_{\text{data}}(x) \right\|^2 \right] =
+\mathbb{E}_{x \sim p_{\text{data}}(x)} \left[ \left\| \frac{(x-\mu)}{\sigma^2} - \nabla_x \log p_{\text{data}}(x) \right\|^2 \right]
+\end{equation*}
+and also:
+\begin{equation*}
+\mathcal{L}_{\text{implicit}}(\theta) = \mathbb{E}_{x \sim p_{\text{data}}(x)} \left[ \left\| \nabla_x \log p_\theta(x)  \right\|^2 \right] =
+\mathbb{E}_{x \sim p_{\text{data}}(x)} \left[ \left\| \frac{(x-\mu)}{\sigma^2}  \right\|^2 \right]
+\end{equation*}
+ % ----------------------------------------------------------
+ \item 
+ 
+\end{enumerate}
+% --------------------------
+% ###########################
+% -------------------------
+\section{Problem 4}
+
+
+\end{document}
+
+
+% Let $q(x|x') = \mathcal{N}(x | x', \sigma^2)$ and $x = x' + \sigma z, z\sim \mathcal{N}(0,I)$ and we have $p_\theta(x) = \mathcal{N}(x;\mu,\sigma)$.
+% We start with the explicit score matching loss function, which is given by
+% \[
+% J_{\text{ESM}}(\theta) = \mathbb{E}_{q(x)} \left[ \frac{1}{2} \| s_{\theta}(x) - \nabla_x \log q(x) \|^2 \right]
+% \]
+% \[
+% = \mathbb{E}_{q(x)} \left[ \frac{1}{2} \| s_{\theta}(x) \|^2 - s_{\theta}(x)^T \nabla_x \log q(x) + \frac{1}{2} \| \nabla_x \log q(x) \|^2 \right] \quad \text{(defining \( C_1 \), independent of \( \theta \))}
+% \]
+% Let’s zoom into the second term. We can show that
+% \[
+% \mathbb{E}_{q(x)} \left[ s_{\theta}(x)^T \nabla_x \log q(x) \right]
+% = \int_{\chi} s_{\theta}(x)^T \nabla_x \log q(x) q(x) \, dx \quad \text{(expectation)}
+% \]
+% \[
+% = \int_{\chi} s_{\theta}(x)^T \frac{\nabla_x q(x)}{q(x)} q(x) \, dx 
+% = \int_{\chi} s_{\theta}(x)^T \nabla_x q(x) \, dx.\quad \text{(gradient)}
+% \]
+% Next, we consider conditioning by recalling that \( q(x) = \int q(x') q(x|x') \, dx' \). This will give us
+% \[
+% \int_{\chi} s_{\theta}(x)^T \nabla_x q(x) \, dx = \int_{\chi} s_{\theta}(x)^T \nabla_x \left( \int q(x') q(x|x') \, dx' \right) dx
+% \]
+% \[
+% = \int_{\chi} s_{\theta}(x)^T \left( \int q(x') \nabla_x q(x|x') \, dx' \right) dx \quad \text{(move gradient)}
+% \]
+% \[
+% = \int_{\chi} s_{\theta}(x)^T \left( \int q(x') \frac{\nabla_x q(x|x')}{q(x|x')} q(x|x') \, dx' \right) dx \quad \text{(multiply and divide)}
+% \]
+% \[
+% = \int_{\chi} s_{\theta}(x)^T \left( \int q(x') \frac{\nabla_x q(x|x')}{q(x|x')} \, dx' \right) dx \quad \text{(rearrange terms)}
+% \]
+% \[
+% = \int_{\chi} \int q(x|x') q(x') s_{\theta}(x)^T \nabla_x \log q(x|x') \, dx' \, dx.
+% \]
+% Thus, we have
+% \[
+% \mathbb{E}_{q(x, x')} \left[ s_{\theta}(x)^T \nabla_x \log q(x|x') \right].
+% \]
+% So, if we substitute this result back into the definition of \( J_{\text{ESM}} \), we can show that
+% \[
+% J_{\text{ESM}}(\theta) = \mathbb{E}_{q(x)} \left[ \frac{1}{2} \| s_{\theta}(x) \|^2 \right] - \mathbb{E}_{q(x,x')} \left[ s_{\theta}(x)^T \nabla_x \log q(x|x') \right] + C_1.
+% \]
+% Comparing this with the definition of \( J_{\text{DSM}} \), we can observe that
+% \[
+% J_{\text{DSM}}(\theta) = \mathbb{E}_{q(x,x')} \left[ \frac{1}{2} \| s_{\theta}(x) - \nabla_x q(x|x') \|^2 \right]
+% \]
+% \[
+% = \mathbb{E}_{q(x,x')} \left[ \frac{1}{2} \| s_{\theta}(x) \|^2 - s_{\theta}(x)^T \nabla_x \log q(x|x') + \frac{1}{2} \| \nabla_x \log q(x|x') \|^2 \right] \quad \text{(defining \( C_2 \), independent of \( \theta \))}
+% \]
+% \[
+% = \mathbb{E}_{q(x)} \left[ \frac{1}{2} \| s_{\theta}(x) \|^2 \right] - \mathbb{E}_{q(x,x')} \left[ s_{\theta}(x)^T \nabla_x \log q(x|x') \right] + C_2.
+% \]
+% Therefore, we conclude that
+% \[
+% J_{\text{DSM}}(\theta) = J_{\text{ESM}}(\theta) - C_1 + C_2.
+% \]
+
+%  Therefore DSM and ESM optimizations are equivalent objective!
+%  % ----------------------------------------------------------
