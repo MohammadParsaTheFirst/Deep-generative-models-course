@@ -16,5 +16,5 @@ https://generative-ai-sut.github.io/
 - Generative Adversarial Network
 - Flow Models
 
-# CHW4 & HW4:
+## CHW4 & HW4:
 - Diffusion Models
