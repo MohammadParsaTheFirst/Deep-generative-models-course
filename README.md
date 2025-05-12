@@ -1,5 +1,5 @@
 # Deep-Generative-Models
-Coursework and projects for Deep Generative Models (DGM) course (Graduate), including theoretical homework solutions/problems, and the project of the course.
+Coursework and projects for Deep Generative Models (DGM) course (Graduate), including theoretical homework solutions/problems, and the project of the course, instructed by [Dr. Sajjad Amini](https://scholar.google.com/citations?user=24GngZYAAAAJ&hl=en).
 
 Here is the page of the course:
 https://generative-ai-sut.github.io/
