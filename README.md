@@ -3,6 +3,8 @@ Coursework and projects for Deep Generative Models (DGM) course (Graduate), incl
 
 Here is the page of the course:
 https://generative-ai-sut.github.io/
+later I was TA of the course: 
+https://dgm-sut-amini.github.io/
 
 
 ## CHW1 & HW1:
